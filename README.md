@@ -21,7 +21,7 @@ A Python-based recreation of the classic **Flappy Bird** game, featuring pixel-p
     ```
 2. Download or clone the repository:
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/ElioCheng/Flappy_Bird.git
     ```
 3. Run the game:
     ```bash
