@@ -2,8 +2,6 @@
 
 A Python-based recreation of the classic **Flappy Bird** game, featuring pixel-perfect collision detection using masks for precise gameplay.
 
-## Video Demo
-https://youtu.be/J3siykNyf14
 
 ## Features
 - **Pixel-perfect collision detection:** Achieved with Pygame masks for accuracy.
