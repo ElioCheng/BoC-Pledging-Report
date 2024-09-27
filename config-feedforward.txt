@@ -1,0 +1,83 @@
+[NEAT]
+fitness_criterion     = max    # We’re going with the best birds to breed the next generation.
+                               # Survival of the fittest – we are getting rid of the weaker birds
+
+fitness_threshold     = 100    # Once a bird hits a fitness score of 100, we call it good enough and stop the evolution
+
+pop_size              = 100    # We'll keep the population size at 100
+
+reset_on_extinction   = False  # No need to restart if they all go extinct
+
+[DefaultGenome]
+# node activation options
+activation_default      = tanh  # We stick with 'tanh' because it smooths things out nicely.
+activation_mutate_rate  = 0.0   # No need for random activation functions here for consistency.
+activation_options      = tanh  # Only 'tanh' is allowed.
+
+# node aggregation options
+aggregation_default     = sum   # summing the inputs
+aggregation_mutate_rate = 0.0   # No mutations here; keep the aggregation as it is
+aggregation_options     = sum   # Again, sum is the only option.
+
+# node bias options
+bias_init_mean          = 0.0   # Biases start neutral
+bias_init_stdev         = 1.0   # We allow a bit of variation in the starting biases
+bias_max_value          = 30.0  # Keeping bias within reason, no wild numbers
+bias_min_value          = -30.0 # Same for the negative side, stay balanced
+bias_mutate_power       = 0.5   # When we do mutate, let’s not go too crazy with the changes
+bias_mutate_rate        = 0.7   # We give a decent chance for bias mutations for keeping things interesting
+bias_replace_rate       = 0.1   # Rarely, we’ll completely replace a bias with a new one
+
+# genome compatibility options
+compatibility_disjoint_coefficient = 1.0  # Disjoint genes are penalized to keep genomes in line
+compatibility_weight_coefficient   = 0.5  # Differences in connection weights are somewhat penalized
+
+# connection add/remove rates
+conn_add_prob           = 0.5   # There’s a 50/50 chance of adding a new connection when mutating
+conn_delete_prob        = 0.5   # Same chance of removing a connection to keep things from getting overcrowded
+
+# connection enable options
+enabled_default         = True  # We start with all connections enabled by default
+enabled_mutate_rate     = 0.01  # Very slim chance of disabling connections
+
+feed_forward            = True  # Feed-forward structure only (no loops, just a straightforward flow)
+initial_connection      = full  # All input nodes connect to output nodes initially 
+
+# node add/remove rates
+node_add_prob           = 0.2   # Sometimes we add a new node - evolution’s way of adding complexity.
+node_delete_prob        = 0.2   # But sometimes we also remove nodes, keeping things efficient
+
+# network parameters
+num_hidden              = 0     # Start simple with no hidden layers at the beginning.
+num_inputs              = 3     # We’re working with 3 inputs here (probably something like game states)
+num_outputs             = 1     # Just one output that decides the bird’s next move
+
+# node response options
+response_init_mean      = 1.0   # Nodes respond at a steady rate, with no surprises.
+response_init_stdev     = 0.0   # We keep initial responses uniform across the board
+response_max_value      = 30.0  # Capping response to avoid crazy reactions
+response_min_value      = -30.0 # Same for negative responses
+response_mutate_power   = 0.0   # We’re not mutating node responses, keeping them steady
+response_mutate_rate    = 0.0   # Again, no mutation in node responses
+response_replace_rate   = 0.0   # Not replacing node responses either for it to be stable
+
+# connection weight options
+weight_init_mean        = 0.0   # Start with neutral weights
+weight_init_stdev       = 1.0   # Some variation in the starting weights, but nothing too big
+weight_max_value        = 30    # Weights are capped at 30 to avoid extreme values
+weight_min_value        = -30   # Same for the negative side
+weight_mutate_power     = 0.5   # Mutations won’t be too drastic because we want gradual improvement
+weight_mutate_rate      = 0.8   # We allow a good amount of weight mutations for exploration
+weight_replace_rate     = 0.1   # Occasionally, we’ll fully replace a weight to mix things up
+
+[DefaultSpeciesSet]
+compatibility_threshold = 3.0  # Species need to be within a threshold of 3 to be considered compatible
+
+[DefaultStagnation]
+species_fitness_func = max    # Only look at the top performer in each species 
+max_stagnation       = 20     # After 20 generations without improvement, a species is considered stagnant
+species_elitism      = 2      # Keep the top 2 species no matter what to preserve the best strategies
+
+[DefaultReproduction]
+elitism            = 2        # Always keep the top 2 birds from the previous generation
+survival_threshold = 0.2      # Only the top 20% get to survive and breed

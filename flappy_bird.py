@@ -3,6 +3,7 @@ import neat
 import time
 import os
 import random
+pygame.font.init()
 
 WIN_WIDTH = 500
 WIN_HEIGHT = 800
@@ -13,6 +14,8 @@ BIRD_IMGS = [pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bi
 PIPE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "pipe.png")))
 BASE_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "base.png")))
 BG_IMG = pygame.transform.scale2x(pygame.image.load(os.path.join("imgs", "bg.png")))
+
+STAT_FONT = pygame.font.SysFont("comicsans", 50)
 
 class Bird:
     # These are the class variables not the instance variables
@@ -112,24 +115,70 @@ class Pipe:
         win.blit(self.PIPE_TOP, (self.x, self.top))
         win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
 
-    def collide(self, bird, win):
+    def collide(self, bird):
         bird_mask = bird.get_mask()
         top_mask = pygame.mask.from_surface(self.PIPE_TOP)
         bottom_mask = pygame.mask.from_surface(self.PIPE_BOTTOM)
 
+        top_offset = (self.x - bird.x, self.top - round(bird.y)) # offset from the bird to the top mask
+        bottom_offset = (self.x - bird.x, self.bottom - round(bird.y))
+
+        b_point = bird_mask.overlap(bottom_mask, bottom_offset) # finding their point of colision, if there's no overlap it's going to return none
+        t_point = bird_mask.overlap(top_mask, top_offset)
+
+        if t_point or b_point:  # If any of the two points is not none, it means we have a overlap
+            return True
+        
+        return False
+
+class Base:
+    VEL = 5 # It needs to moving the same speed as the pipe
+    WIDTH = BASE_IMG.get_width() 
+    IMG = BASE_IMG
+    
+    def __init__(self, y):
+        self.y = y
+        self.x1 = 0          # the starting point for our image
+        self.x2 = self.WIDTH # the end point of our image, so that our first image runs out of the screen we can extend it with a new one starting at x2
+
+    def move(self):
+        self.x1 -= self.VEL
+        self.x2 -= self.VEL
+
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 + self.WIDTH # we extend the first image after x2 when the first image goes off the screen
+        
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH # we extend x2 after x1 when x2 goes off the screen
+        
+    def draw(self, win):
+        win.blit(self.IMG, (self.x1, self.y)) # draw both of our bases
+        win.blit(self.IMG, (self.x2, self.y))
+            
 
 
-def draw_window(win, bird): # Draw the background image and draw the bird on top of it
+
+def draw_window(win, bird, pipes, base, score): # Draw the background image and draw the bird on top of it, with the pipes, and the base
     win.blit(BG_IMG, (0,0))
+
+    for pipe in pipes: # pipes is going to come in as a list, becasue we could have multiple pipes on the screen at once
+        pipe.draw(win)
+    
+    text = STAT_FONT.render("Score: " + str(score), 1, (255, 255, 255)) # Render some font to tell us the score when we are playing so we can see it, and we are going to make it white
+    win.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10)) # Our score will be rolling if the score is too big and gets wider than the screen 
+    base.draw(win)
     bird.draw(win)
     pygame.display.update() # This update the display to be after we drew the background and the bird
 
 
 
-def main():
-    bird = Bird(200, 200)
+def main(gnomes, config): 
+    bird = Bird(230, 350) # This position is easier for the bird to pass the first pipe
+    base = Base(730) # We are drawing at the bottom of our screen
+    pipes = [Pipe(600)]
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT)) # Initialize the video system, set up the window for displaying
     clock = pygame.time.Clock() 
+    score = 0
 
     run = True
     # We have a game loop here This is called thirty times a second, we call brid move on the bird objects we have and it will
@@ -138,12 +187,62 @@ def main():
         for event in pygame.event.get(): # Keep track of whenever something happens like when user click the mouse
             if event.type == pygame.QUIT: # If we click the close button on our window, we are going to quit the game
                 run = False
-        bird.move()        
-        draw_window(win, bird)
+        
+        bird.move()
+
+        add_pipe = False # Define the add_pipe variable that we're going to use later
+        rem = []
+
+        for pipe in pipes:
+            if pipe.collide(bird): # we dont deal with the case where collision happens yet
+                pass
+
+            if pipe.x + pipe.PIPE_TOP.get_width() < 0: # When our previous pipe goes completely off the screen, we need to remove the pipe
+                rem.append(pipe)
+            
+            if not pipe.passed and pipe.x < bird.x:
+                pipe.passed = True # Meaning that our bird has already travelled pass the pipe
+                add_pipe = True    # And we need to add a new pipe for the bird to go through again
+            
+            pipe.move() # move the pipe we have on the screen, and create another pipe once we have the previous pipe moving out of the screen
+
+        if add_pipe:
+            score += 1 
+            pipes.append(Pipe(700)) # add a new pipe of the same x position (the y position is generated randomly)
+        
+        for r in rem:
+            pipes.remove(r) # remove the pipe that goes off the screen
+        
+        if bird.y + bird.img.get_height() > 730: # If our bird hit the floor, then the player is lost and we need to end the game
+            pass # we are going to pass right now but we are going to change it later
+        base.move()
+        draw_window(win, bird, pipes, base, score)
 
     pygame.quit()
     quit()
 
+def run(config_path):
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,   # We need to define all of the subheadings we use for our configuration file
+                                neat.DefaultSpeciesSet, neat.DefaultStagnation, # We tells it all the properties we are setting 
+                                config_path)
+    
+    p = neat.Population(config) # Create the population, which is the top-level object for a NEAT run.
 
-if __name__ == "__main__":
-    main()
+    p.add_reporter(neat.StdOutReporter(True)) # Add a stdout reporter to show progress in the terminal.
+    stats = neat.StatisticsReporter()    
+    p.add_reporter(stats)  # Gives us the static output
+    #p.add_reporter(neat.Checkpointer(5))
+
+    
+    winner = p.run(main, 50) # Set the fitness function that we are goign to run for up to 50 generations.
+
+    # show final stats
+    print('\nBest genome:\n{!s}'.format(winner))
+
+if __name__ == '__main__':
+    local_dir = os.path.dirname(__file__) # Determine path to configuration file. This path manipulation is, so that the script will run successfully regardless of the current working directory.
+    config_path = os.path.join(local_dir, 'config-feedforward.txt')
+    run(config_path)
+
+
+
